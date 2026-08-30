@@ -30,13 +30,21 @@ A4縦・1ページ6枠（2列×3段）。列は A(0.9) / **B–E(10.5)＝左の�
 
 各枠は5行：
 ```
-写真     158pt   B:E をマージ
-番号①    17pt   右寄せ・indent 1
-記入欄1   15pt   ← ラベルなし・空欄
+写真      158pt   B:E をマージ
+画像①    17pt   右寄せ・indent 1・太字（「①」だけでなく「画像①」と書く）
+記入欄1   15pt   ← ラベルなし・空欄。左寄せ・indentなし
 記入欄2   15pt
 記入欄3   15pt
 （すき間） 10pt
 ```
+
+正本Excel（【202608】GS滑川）の解析で確定した値（2026-08-30）：
+- **フォントは全セル10pt**（タイトル「写 真 台 帳」だけ16pt太字）。9ptにしない
+- ヘッダーのラベルは**字間つき**：`現 場 名`・`作業種別`・`作 業 日`・`天　　候`
+- タイトル行の高さ **26pt**
+- 余白 left/right **0.3**・top **0.35**・bottom **0.3**・header/footer **0.15**、`fitToWidth=1`
+- **2ページ目以降は先頭に10ptのすき間行が1本入る**（改ページは行23/42/61型。等間隔ではない）
+- フッターは `&C&"ＭＳ Ｐゴシック,Regular"&9 &P / &N`
 
 **やらないこと（すべて実務での指示）**
 - 写真の上に題名を置かない。見出しバーを作らない
@@ -65,9 +73,11 @@ A4縦・1ページ6枠（2列×3段）。列は A(0.9) / **B–E(10.5)＝左の�
 
 ```bash
 npm i exceljs
-node -e "require('./js/daicho.js').build({header:{site:'テスト'},slots:[...] }).then(b=>require('fs').writeFileSync('/tmp/o.xlsx',Buffer.from(b)))"
+node tools/verify.js
 ```
-出力は unzip して `xl/drawings/drawing1.xml`（アンカー位置）、`xl/worksheets/sheet1.xml`（列幅・改ページ）、`xl/styles.xml`（フォント・塗り）を見る。
+
+`tools/verify.js` が滑川19枚（OneDrive の sel）で台帳を生成し、**手作業の正本と15項目を自動で突き合わせる**（列幅・行高・改ページ・セル値・フォント・余白・フッター・画像アンカー）。全OKになるまで直す。
+手で見るなら unzip して `xl/drawings/drawing1.xml`（アンカー位置）、`xl/worksheets/sheet1.xml`（列幅・改ページ）、`xl/styles.xml`（フォント・塗り）。
 
 **`js/photos.js` と `js/ui.js` は Node では検証できない**（canvas / DOM が要る）。ブラウザで目視するしかない。
 

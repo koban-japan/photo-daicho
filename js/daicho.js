@@ -17,7 +17,7 @@
   var NH   = 15;    // 記入欄1行
   var GAP  = 10;    // 段と段のすき間
   var COLW = 10.5;  // 写真列の幅(文字)
-  var PAD  = 6;     // 写真と枠のすき間(px)
+  var PAD  = 4;     // 写真と枠のすき間(px)。正本は画像高202.67px＝枠158pt−8px
   var EMU  = 9525;  // 1px = 9525 EMU
   var PER_ROW  = 2; // 1段あたりの枠数
   var ROWS_PER_PAGE = 3; // 1ページあたりの段数
@@ -39,7 +39,7 @@
 
   function setFont(cell, opts) {
     opts = opts || {};
-    cell.font = { name: JP, size: opts.size || 9, bold: !!opts.bold, color: { argb: 'FF000000' } };
+    cell.font = { name: JP, size: opts.size || 10, bold: !!opts.bold, color: { argb: 'FF000000' } };
   }
 
   /**
@@ -58,7 +58,8 @@
       pageSetup: {
         paperSize: 9,             // A4
         orientation: 'portrait',
-        margins: { left: 0.25, right: 0.25, top: 0.25, bottom: 0.25, header: 0.2, footer: 0.2 }
+        fitToPage: true, fitToWidth: 1, fitToHeight: 0,
+        margins: { left: 0.3, right: 0.3, top: 0.35, bottom: 0.3, header: 0.15, footer: 0.15 }
       }
     });
 
@@ -75,7 +76,7 @@
     t.value = '写 真 台 帳';
     setFont(t, { size: 16, bold: true });
     t.alignment = { horizontal: 'center', vertical: 'middle' };
-    ws.getRow(1).height = 30;
+    ws.getRow(1).height = 26;
     ws.getRow(2).height = 6;
 
     function field(row, labelCell, label, valMerge, value) {
@@ -87,14 +88,14 @@
       var vc = ws.getCell(valMerge.split(':')[0]);
       vc.value = value || '';
       setFont(vc);
-      vc.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
+      vc.alignment = { horizontal: 'left', vertical: 'middle' };
       vc.border = BOX;
       ws.getRow(row).height = 20;
     }
-    field(3, 'B3', '現場名',   'C3:E3', header.site);
+    field(3, 'B3', '現 場 名', 'C3:E3', header.site);
     field(3, 'G3', '作業種別', 'H3:J3', header.work);
-    field(4, 'B4', '作業日',   'C4:E4', header.date);
-    field(4, 'G4', '天候',     'H4:J4', header.weather);
+    field(4, 'B4', '作 業 日', 'C4:E4', header.date);
+    field(4, 'G4', '天　　候', 'H4:J4', header.weather);
     ws.getRow(5).height = GAP;
 
     // ---- 写真ブロック ----
@@ -106,7 +107,9 @@
     var promises = [];
 
     for (var tier = 0; tier < tiers; tier++) {
-      var top = HEADER_ROWS + tier * TIER_ROWS + 1; // 写真行(1始まり)
+      // 2ページ目以降は先頭に10ptのすき間行が1本入る（正本の構造）
+      var top = HEADER_ROWS + tier * TIER_ROWS + Math.floor(tier / ROWS_PER_PAGE) + 1; // 写真行(1始まり)
+      if (tier % ROWS_PER_PAGE === 0 && tier > 0) ws.getRow(top - 1).height = GAP;
       ws.getRow(top).height = PH;
       ws.getRow(top + 1).height = NOH;
       ws.getRow(top + 2).height = NH;
@@ -130,7 +133,7 @@
     }
 
     // フッター（ページ番号）
-    ws.headerFooter = { oddFooter: '&C&"' + JP + '"&9' + '&P / &N' };
+    ws.headerFooter = { oddFooter: '&C&"' + JP + ',Regular"&9 &P / &N' };
 
     return wb.xlsx.writeBuffer();
   }
@@ -148,11 +151,11 @@
     ws.mergeCells(L + top + ':' + R + top);
     ws.getCell(L + top).border = BOX;
 
-    // 番号セル（写真の下・右寄せ）
+    // 番号セル（「画像①」・太字・写真の下・右寄せ）
     ws.mergeCells(L + (top + 1) + ':' + R + (top + 1));
     var nc = ws.getCell(L + (top + 1));
-    nc.value = MARU.charAt(idx) || String(idx + 1);
-    nc.font = { name: JP, size: 10, color: { argb: 'FF000000' } };
+    nc.value = '画像' + (MARU.charAt(idx) || String(idx + 1));
+    nc.font = { name: JP, size: 10, bold: true, color: { argb: 'FF000000' } };
     nc.alignment = { horizontal: 'right', vertical: 'middle', indent: 1 };
     nc.border = BOX;
 
@@ -163,8 +166,8 @@
       ws.mergeCells(L + r + ':' + R + r);
       var cell = ws.getCell(L + r);
       cell.value = notes[i] || '';
-      cell.font = { name: JP, size: 9, color: { argb: 'FF000000' } };
-      cell.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
+      cell.font = { name: JP, size: 10, color: { argb: 'FF000000' } };
+      cell.alignment = { horizontal: 'left', vertical: 'middle' };
       cell.border = BOX;
     }
 

@@ -159,7 +159,10 @@
       })
     }).then(function (buf) {
       var h = header();
-      var name = '【' + (h.date || '') + '】【' + (h.site || '現場') + '】　' + (h.work || '') + '　写真台帳.xlsx';
+      // ファイル名の日付は YYYYMM（実物の台帳と同じ）。「2026年8月24日（月）」→「202608」
+      var m = (h.date || '').match(/(\d{4})[年\/\-.](\d{1,2})/);
+      var tag = m ? m[1] + ('0' + m[2]).slice(-2) : (h.date || '');
+      var name = '【' + tag + '】【' + (h.site || '現場') + '】　' + (h.work || '') + '　写真台帳.xlsx';
       var blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
