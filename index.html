@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>写真台帳ジェネレーター</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+  <h1>写真台帳ジェネレーター</h1>
+  <p class="lead">現場写真を放り込むと、写真台帳（Excel）が出てきます。<br>
+  <strong>写真の原本はこの端末から出ません。</strong>AIの判定に使うのは縮小版だけで、処理後も保存されません。</p>
+</header>
+
+<main>
+
+<section>
+  <h2>1. 現場の情報</h2>
+  <div class="grid">
+    <label>現場名<input id="f-site" placeholder="グランデソーレー滑川発電所"></label>
+    <label>作業種別<input id="f-work" placeholder="除草・除草剤散布作業"></label>
+    <label>作業日<input id="f-date" placeholder="2026年8月24日"></label>
+    <label>天候<input id="f-weather" placeholder="晴れ"></label>
+  </div>
+  <label class="full">AIへの要望（任意）
+    <input id="f-want" placeholder="20枚に絞って。監視カメラの写真は作業後です。">
+  </label>
+</section>
+
+<section>
+  <h2>2. 写真を選ぶ</h2>
+  <input type="file" id="f-files" multiple accept="image/*,.heic,.heif">
+  <p class="hint">HEIC（iPhone）もそのまま入ります。枚数が多いと変換に少し時間がかかります。</p>
+  <p id="ingest-status" class="status"></p>
+</section>
+
+<section>
+  <h2>3. AIに選別させる<span class="opt">（任意）</span></h2>
+  <button id="btn-ai" disabled>AIに選別と記入欄の文案を頼む</button>
+  <p class="hint"><strong>AIは案を出すだけです。</strong>下の一覧でチェックを外したり、文言を書き換えたりできます。
+  最後に決めるのはあなたです。</p>
+  <p id="ai-status" class="status"></p>
+</section>
+
+<section>
+  <h2>4. 確認する</h2>
+  <p class="hint">使う写真にチェックを入れ、記入欄を埋めてください。上から順に ①②③… になります。</p>
+  <div id="list" class="list"></div>
+</section>
+
+<section>
+  <h2>5. 出力</h2>
+  <button id="btn-build" disabled>Excelをダウンロード</button>
+  <p id="build-status" class="status"></p>
+</section>
+
+</main>
+
+<script src="vendor/exceljs.min.js"></script>
+<script src="vendor/heic2any.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/daicho.js"></script>
+<script src="js/photos.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

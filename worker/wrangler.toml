@@ -1,0 +1,6 @@
+name = "photo-daicho-api"
+main = "index.js"
+compatibility_date = "2026-08-30"
+
+# APIキーは平文で置かない。次のコマンドで登録する:
+#   npx wrangler secret put ANTHROPIC_API_KEY
