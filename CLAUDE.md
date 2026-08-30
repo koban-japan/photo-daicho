@@ -61,6 +61,11 @@ A4縦・1ページ6枠（2列×3段）。列は A(0.9) / **B–E(10.5)＝左の�
 必ず `nativeCol` / `nativeColOff` / `nativeRow` / `nativeRowOff` で **EMU を直接指定**する。**1px = 9525 EMU**。
 列幅10.5 = 78.5px、写真枠 = 78.5×4 = 314px 幅 / 158pt = 210.67px 高。
 
+**tl+ext（oneCellAnchor）は使わない。tl+br の twoCellAnchor にする。**
+ExcelJS は oneCellAnchor に `editAs` 属性を必ず書き込むが、`editAs` は仕様上 twoCellAnchor 専用。
+このため **Excel が開くときに「修復」して画像を全部削除する**（exceljs#2777。2026-08-30 に実害）。
+`tools/verify.js` に回帰チェックあり（「oneCellAnchor に editAs なし」）。
+
 ## AI は案を出すだけ
 
 選別も記入欄の文言も、**最後に決めるのは人間**。
