@@ -31,8 +31,11 @@
 
 <section>
   <h2>2. 写真を選ぶ</h2>
-  <input type="file" id="f-files" multiple accept="image/*,.heic,.heif">
-  <p class="hint">HEIC（iPhone）もそのまま入ります。枚数が多いと変換に少し時間がかかります。</p>
+  <div id="dropzone">
+    <input type="file" id="f-files" multiple accept="image/*,.heic,.heif">
+    <p class="dz-hint">ここに写真をドラッグ&ドロップしても追加できます</p>
+  </div>
+  <p class="hint">HEIC（iPhone）もそのまま入ります。あとから追加もできます（選択済みは消えません）。枚数が多いと変換に少し時間がかかります。</p>
   <p id="ingest-status" class="status"></p>
 </section>
 
@@ -46,13 +49,15 @@
 
 <section>
   <h2>4. 確認する</h2>
-  <p class="hint">使う写真にチェックを入れ、記入欄を埋めてください。上から順に ①②③… になります。</p>
+  <p class="hint">使う写真にチェックを入れ、記入欄を埋めてください。上から順に ①②③… になります。
+  並べ替えは ≡ をドラッグするか ▲▼ で。</p>
   <div id="list" class="list"></div>
 </section>
 
 <section>
   <h2>5. 出力</h2>
   <button id="btn-build" disabled>Excelをダウンロード</button>
+  <span id="count" class="count"></span>
   <p id="build-status" class="status"></p>
 </section>
 

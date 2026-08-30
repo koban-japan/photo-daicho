@@ -4,7 +4,7 @@
   var APP = root.APP = root.APP || {};
   var $ = function (id) { return document.getElementById(id); };
 
-  var state = { photos: [], busy: false };
+  var state = { photos: [], busy: false, dragIdx: -1 };
 
   function header() {
     return {
@@ -64,10 +64,45 @@
       dn.onclick = function () { swap(i, i + 1); };
       mv.appendChild(up); mv.appendChild(dn);
 
-      row.appendChild(cb); row.appendChild(im); row.appendChild(meta); row.appendChild(mv);
+      // ドラッグ並べ替え（持ち手だけ draggable にする。行ごとだと記入欄の文字選択と衝突する）
+      var grip = document.createElement('span');
+      grip.className = 'grip';
+      grip.textContent = '≡';
+      grip.title = 'ドラッグで並べ替え';
+      grip.draggable = true;
+      grip.ondragstart = function (e) {
+        state.dragIdx = i;
+        row.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(i)); // Firefox はこれが無いとドラッグが始まらない
+        e.dataTransfer.setDragImage(row, 20, 20);
+      };
+      grip.ondragend = function () { state.dragIdx = -1; render(); };
+      row.ondragover = function (e) {
+        if (state.dragIdx < 0) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        row.classList.add('drop-target');
+      };
+      row.ondragleave = function () { row.classList.remove('drop-target'); };
+      row.ondrop = function (e) {
+        if (state.dragIdx < 0) return;
+        e.preventDefault();
+        var from = state.dragIdx;
+        state.dragIdx = -1;
+        if (from === i) { render(); return; }
+        var moved = state.photos.splice(from, 1)[0];
+        state.photos.splice(i, 0, moved);
+        render();
+      };
+
+      row.appendChild(grip); row.appendChild(cb); row.appendChild(im); row.appendChild(meta); row.appendChild(mv);
       list.appendChild(row);
     });
 
+    $('count').textContent = state.photos.length
+      ? '選択中 ' + n + ' 枚 / 読み込み ' + state.photos.length + ' 枚'
+      : '';
     $('btn-build').disabled = state.busy || n === 0;
     $('btn-ai').disabled = state.busy || state.photos.length === 0 || !root.DAICHO_API;
     if (!root.DAICHO_API && state.photos.length) {
@@ -81,23 +116,34 @@
     render();
   }
 
-  function onFiles(e) {
-    var files = e.target.files;
-    if (!files || !files.length) return;
+  // 追加読み込み：既存の写真・チェック・記入欄は消さない（要件§7）
+  function addFiles(files) {
+    if (!files || !files.length || state.busy) return;
+    var imgs = Array.prototype.filter.call(files, function (f) {
+      return /^image\//.test(f.type) || /\.(heic|heif|jpe?g|png)$/i.test(f.name || '');
+    });
+    if (!imgs.length) { say('ingest-status', '画像ファイルが見つかりませんでした。', true); return; }
     state.busy = true; render();
-    say('ingest-status', '読み込み中… 0 / ' + files.length);
-    APP.photos.ingest(files, function (done, total) {
+    say('ingest-status', '読み込み中… 0 / ' + imgs.length);
+    APP.photos.ingest(imgs, function (done, total) {
       say('ingest-status', '読み込み中… ' + done + ' / ' + total);
-    }).then(function (photos) {
-      state.photos = photos;
+    }).then(function (res) {
+      state.photos = state.photos.concat(res.photos);
       state.busy = false;
-      say('ingest-status', photos.length + ' 枚を読み込みました。使うものにチェックを入れてください。');
+      var msg = res.photos.length + ' 枚を追加しました（合計 ' + state.photos.length + ' 枚）。使うものにチェックを入れてください。';
+      if (res.failed.length) msg += ' 読めませんでした：' + res.failed.join('、');
+      say('ingest-status', msg, res.failed.length > 0);
       render();
     }).catch(function (err) {
       state.busy = false;
       say('ingest-status', '読み込みに失敗しました：' + err.message, true);
       render();
     });
+  }
+
+  function onFiles(e) {
+    addFiles(e.target.files);
+    e.target.value = '';   // 同じファイルをもう一度選び直せるようにする
   }
 
   function onAI() {
@@ -184,6 +230,31 @@
       $('f-files').addEventListener('change', onFiles);
       $('btn-ai').addEventListener('click', onAI);
       $('btn-build').addEventListener('click', onBuild);
+
+      // ページのどこに落としても追加できるようにする（見た目のハイライトは投入口だけ）
+      var dz = $('dropzone');
+      document.addEventListener('dragover', function (e) {
+        if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') !== -1) {
+          e.preventDefault();
+          dz.classList.add('over');
+        }
+      });
+      document.addEventListener('dragleave', function (e) {
+        if (!e.relatedTarget) dz.classList.remove('over');
+      });
+      document.addEventListener('drop', function (e) {
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+          e.preventDefault();
+          dz.classList.remove('over');
+          addFiles(e.dataTransfer.files);
+        }
+      });
+
+      // 誤リロード・誤タブ閉じで入力が全部消えるのを防ぐ
+      window.addEventListener('beforeunload', function (e) {
+        if (state.photos.length) { e.preventDefault(); e.returnValue = ''; }
+      });
+
       render();
     },
     state: state

@@ -29,10 +29,19 @@ const CAPTION_PROMPT = `太陽光発電所の写真台帳の記入欄1行目に�
 
 JSON だけを返しなさい。{"notes":{"1":"","5":"監視カメラ付近"}}`;
 
-function json(o, status = 200) {
+// ブラウザからの呼び出し元を絞る（APIの原価を他サイトに燃やされないための最低限のガード）。
+// 'null' は file:// でダブルクリック起動したときの Origin。curl 等の直叩きは防げない＝課金導入時にキー認証を足す。
+const ALLOWED_ORIGINS = ['https://koban-japan.github.io', 'null'];
+function corsOrigin(request) {
+  const o = request.headers.get('Origin') || '';
+  if (ALLOWED_ORIGINS.includes(o) || /^https?:\/\/localhost(:\d+)?$/.test(o)) return o;
+  return '';
+}
+
+function json(o, status = 200, origin = '') {
   return new Response(JSON.stringify(o), {
     status,
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origin || 'https://koban-japan.github.io' }
   });
 }
 
@@ -63,16 +72,19 @@ const img = b64 => ({ type: 'image', source: { type: 'base64', media_type: 'imag
 
 export default {
   async fetch(request, env) {
+    const origin = corsOrigin(request);
     if (request.method === 'OPTIONS') {
+      if (!origin) return new Response(null, { status: 403 });
       return new Response(null, {
         headers: {
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': origin,
           'Access-Control-Allow-Methods': 'POST, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type'
         }
       });
     }
-    if (request.method !== 'POST') return json({ error: 'POST only' }, 405);
+    if (request.method !== 'POST') return json({ error: 'POST only' }, 405, origin);
+    if (request.headers.get('Origin') && !origin) return json({ error: 'origin not allowed' }, 403);
 
     try {
       const body = await request.json();
@@ -86,7 +98,7 @@ export default {
           content.push(img(s.image));
         }
         const { result, usage } = await callClaude(env, SELECT_PROMPT, content);
-        return json({ ...result, usage });
+        return json({ ...result, usage }, 200, origin);
       }
 
       if (body.task === 'caption') {
@@ -96,12 +108,12 @@ export default {
           content.push(img(p.image));
         }
         const { result, usage } = await callClaude(env, CAPTION_PROMPT, content);
-        return json({ ...result, usage });
+        return json({ ...result, usage }, 200, origin);
       }
 
-      return json({ error: 'task は select か caption' }, 400);
+      return json({ error: 'task は select か caption' }, 400, origin);
     } catch (e) {
-      return json({ error: String(e && e.message || e) }, 500);
+      return json({ error: String(e && e.message || e) }, 500, origin);
     }
   }
 };

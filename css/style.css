@@ -29,3 +29,17 @@ button:disabled{background:#bbb;cursor:default}
 .row .notes input{margin-top:0;font-size:13px}
 .row .move{display:flex;flex-direction:column;gap:4px;flex:none}
 .row .move button{padding:2px 8px;font-size:12px;background:#eee;color:#333}
+.row .grip{flex:none;align-self:center;cursor:grab;color:#999;font-size:18px;padding:0 2px;user-select:none}
+.row>input[type=checkbox]{width:16px;height:16px;flex:none;align-self:center;margin:0}
+.row.dragging{opacity:.35}
+.row.drop-target{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+#dropzone{border:2px dashed var(--line);border-radius:8px;padding:18px;transition:border-color .15s,background .15s}
+#dropzone.over{border-color:var(--accent);background:#f0faf6}
+.dz-hint{margin:8px 0 0;color:var(--mut);font-size:12px}
+.count{margin-left:12px;font-size:13px;color:var(--mut)}
+@media (max-width:480px){
+  .row{flex-wrap:wrap}
+  .row img{width:88px;height:66px}
+  .row .move{flex-direction:row}
+  .row .meta{min-width:100%;order:9}
+}

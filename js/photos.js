@@ -41,15 +41,17 @@
     return { dataUrl: cv.toDataURL('image/jpeg', q), w: d.w, h: d.h };
   }
 
-  /** File[] → [{name, prevDataUrl, prevW, prevH, embedDataUrl, embedW, embedH}] */
+  /** File[] → {photos:[{name, prevDataUrl, ..., use, notes}], failed:[name]}
+   *  1枚失敗しても止まらない（要件§7）。失敗したファイル名は failed で返し、画面に出す。 */
   function ingest(files, onProgress) {
     var out = [];
+    var failed = [];
     var list = Array.prototype.slice.call(files).sort(function (a, b) {
       return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
     });
     var i = 0;
     function step() {
-      if (i >= list.length) return Promise.resolve(out);
+      if (i >= list.length) return Promise.resolve({ photos: out, failed: failed });
       var f = list[i];
       var p = isHeic(f)
         ? root.heic2any({ blob: f, toType: 'image/jpeg', quality: 0.9 })
@@ -65,6 +67,7 @@
         });
       }).catch(function (e) {
         console.warn('読み込めなかった:', f.name, e);
+        failed.push(f.name);
       }).then(function () {
         i++;
         if (onProgress) onProgress(i, list.length);
