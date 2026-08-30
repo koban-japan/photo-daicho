@@ -1,5 +1,7 @@
 # 写真台帳ジェネレーター
 
+**▶ アプリを開く：https://koban-japan.github.io/photo-daicho/**（GitHub Pages・push で自動更新）
+
 現場写真を放り込むと、**写真台帳（Excel）**が出てくるツール。
 太陽光発電所の保守点検（O&M）向け。
 
