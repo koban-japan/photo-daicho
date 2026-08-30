@@ -70,16 +70,24 @@ function parse(dir) {
   let anchors = [];
   try {
     const dr = read('xl/drawings/drawing1.xml');
-    anchors = [...dr.matchAll(/<(?:xdr:)?from><(?:xdr:)?col>(\d+)<\/(?:xdr:)?col><(?:xdr:)?colOff>(\d+)<\/(?:xdr:)?colOff><(?:xdr:)?row>(\d+)<\/(?:xdr:)?row><(?:xdr:)?rowOff>(\d+)<\/(?:xdr:)?rowOff><\/(?:xdr:)?from><(?:xdr:)?ext cx="(\d+)" cy="(\d+)"/g)]
-      .map(m => ({
-        // 位置はフレーム起点からの px に正規化して比較する（列またぎ表現の差を吸収）
-        frame: +m[1] < 6 ? 'L' : 'R',
-        row: +m[3],
-        x: +(((+m[1] - (+m[1] < 6 ? 1 : 6)) * 78.5 + m[2] / 9525).toFixed(1)),
-        y: +((m[4] / 9525).toFixed(1)),
-        w: +((m[5] / 9525).toFixed(1)),
-        h: +((m[6] / 9525).toFixed(1))
-      }));
+    // oneCellAnchor（from+ext）と twoCellAnchor（from+to）の両方を、
+    // フレーム起点からの px に正規化して比較する（アンカー表現の差を吸収）
+    const pos = s => {
+      const m = s.match(/<(?:xdr:)?col>(\d+)<\/(?:xdr:)?col><(?:xdr:)?colOff>(\d+)<\/(?:xdr:)?colOff><(?:xdr:)?row>(\d+)<\/(?:xdr:)?row><(?:xdr:)?rowOff>(\d+)<\/(?:xdr:)?rowOff>/);
+      const col = +m[1], base = col < 6 ? 1 : 6;
+      return { frame: col < 6 ? 'L' : 'R', row: +m[3], x: (col - base) * 78.5 + m[2] / 9525, y: +m[4] / 9525 };
+    };
+    for (const m of dr.matchAll(/<(?:xdr:)?(oneCellAnchor|twoCellAnchor)[^>]*>([\s\S]*?)<\/(?:xdr:)?\1>/g)) {
+      const from = pos(m[2].match(/<(?:xdr:)?from>([\s\S]*?)<\/(?:xdr:)?from>/)[1]);
+      let w, h;
+      const ext = m[2].match(/<(?:xdr:)?ext cx="(\d+)" cy="(\d+)"/);
+      if (ext) { w = +ext[1] / 9525; h = +ext[2] / 9525; }
+      else {
+        const to = pos(m[2].match(/<(?:xdr:)?to>([\s\S]*?)<\/(?:xdr:)?to>/)[1]);
+        w = to.x - from.x; h = to.y - from.y;
+      }
+      anchors.push({ frame: from.frame, row: from.row, x: +from.x.toFixed(1), y: +from.y.toFixed(1), w: +w.toFixed(1), h: +h.toFixed(1) });
+    }
   } catch (e) { /* 画像なし */ }
   return { cols, rows, brks, merges, cells, footer, margins, fonts, fills, anchors };
 }
@@ -158,6 +166,9 @@ async function main() {
   console.log('--- A2 画像 ---');
   check('画像数 = 19', 19, gen.anchors.length);
   check('画像の段・左右が正本と一致', ref.anchors.slice(0, 19).map(a => a.frame + a.row), gen.anchors.map(a => a.frame + a.row));
+  // oneCellAnchor に editAs があると Excel が修復して画像を全部消す（exceljs#2777）
+  const genDr = fs.readFileSync(path.join(tmp, 'gen_x', 'xl/drawings/drawing1.xml'), 'utf8');
+  check('oneCellAnchor に editAs なし', 0, (genDr.match(/oneCellAnchor editAs/g) || []).length);
   const FR_W = 78.5 * 4, FR_H = 210.7;
   check('はみ出しゼロ', [], gen.anchors.filter(a => a.x < 0 || a.y < 0 || a.x + a.w > FR_W + 1 || a.y + a.h > FR_H + 1));
   check('枠内で中央（±1px）', [], gen.anchors.filter(a =>

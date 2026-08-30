@@ -180,17 +180,19 @@
       var offX = (FRAMEW - dw) / 2;
       var offY = (FRAMEH - dh) / 2;
 
-      var nCols = Math.floor(offX / CELLW);
-      var restX = offX - nCols * CELLW;
-
       // EMU で直接指定する（tl の小数はライブラリ側の換算に依存して当てにならない）
+      // tl+ext（oneCellAnchor）は使わない：ExcelJS が editAs を必ず書き込み、
+      // その editAs は仕様上 twoCellAnchor 専用のため Excel が「修復」して画像を全部消す（exceljs#2777）。
+      // tl+br の twoCellAnchor なら editAs="oneCell" が正当。位置とサイズはEMUで厳密に同じ。
+      function anchorX(px) {
+        var n = Math.floor(px / CELLW + 1e-9);
+        return { col: (c0 - 1) + n, off: Math.round((px - n * CELLW) * EMU) };
+      }
+      var a0 = anchorX(offX), a1 = anchorX(offX + dw);
       var id = wb.addImage({ base64: slot.imageBase64, extension: slot.ext || 'jpeg' });
       ws.addImage(id, {
-        tl: {
-          nativeCol: (c0 - 1) + nCols, nativeColOff: Math.round(restX * EMU),
-          nativeRow: (top - 1),        nativeRowOff: Math.round(offY * EMU)
-        },
-        ext: { width: dw, height: dh },
+        tl: { nativeCol: a0.col, nativeColOff: a0.off, nativeRow: (top - 1), nativeRowOff: Math.round(offY * EMU) },
+        br: { nativeCol: a1.col, nativeColOff: a1.off, nativeRow: (top - 1), nativeRowOff: Math.round((offY + dh) * EMU) },
         editAs: 'oneCell'
       });
     }
