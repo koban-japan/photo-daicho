@@ -17,47 +17,74 @@
 <main>
 
 <section>
-  <h2>1. 現場の情報</h2>
-  <div class="grid">
-    <label>現場名<input id="f-site" placeholder="グランデソーレー滑川発電所"></label>
-    <label>作業種別<input id="f-work" placeholder="除草・除草剤散布作業"></label>
-    <label>作業日<input id="f-date" placeholder="2026年8月24日"></label>
-    <label>天候<input id="f-weather" placeholder="晴れ"></label>
-  </div>
+  <h2>1. 種類を選ぶ</h2>
+  <label class="full">テンプレート
+    <select id="f-template"></select>
+  </label>
+  <p id="tpl-desc" class="hint"></p>
+</section>
+
+<section>
+  <h2>2. 現場の情報</h2>
+  <div class="grid" id="fields"></div>
   <label class="full">AIへの要望（任意）
     <input id="f-want" placeholder="20枚に絞って。監視カメラの写真は作業後です。">
   </label>
 </section>
 
 <section>
-  <h2>2. 写真を選ぶ</h2>
+  <h2>3. 写真を選ぶ</h2>
   <div id="dropzone">
     <input type="file" id="f-files" multiple accept="image/*,.heic,.heif">
     <p class="dz-hint">ここに写真をドラッグ&ドロップしても追加できます</p>
   </div>
   <p class="hint">HEIC（iPhone）もそのまま入ります。あとから追加もできます（選択済みは消えません）。枚数が多いと変換に少し時間がかかります。</p>
+  <div id="bar-wrap" class="bar-wrap" hidden><div id="bar" class="bar"></div></div>
   <p id="ingest-status" class="status"></p>
 </section>
 
 <section>
-  <h2>3. AIに選別させる<span class="opt">（任意）</span></h2>
+  <h2>4. AIに選別させる<span class="opt">（任意）</span></h2>
   <button id="btn-ai" disabled>AIに選別と記入欄の文案を頼む</button>
   <p class="hint"><strong>AIは案を出すだけです。</strong>下の一覧でチェックを外したり、文言を書き換えたりできます。
   最後に決めるのはあなたです。</p>
   <p id="ai-status" class="status"></p>
 </section>
 
+<section id="sec-checklist" hidden>
+  <h2>5. 撮影項目<span class="opt">（撮り忘れの確認）</span></h2>
+  <p class="hint">この種類の作業で必要とされる写真です。下の一覧で「項目」を選ぶと ✓ が付きます。</p>
+  <ul id="checklist" class="checklist"></ul>
+</section>
+
 <section>
-  <h2>4. 確認する</h2>
+  <h2>6. 確認する</h2>
   <p class="hint">使う写真にチェックを入れ、記入欄を埋めてください。上から順に ①②③… になります。
   並べ替えは ≡ をドラッグするか ▲▼ で。</p>
+  <div class="bulk">
+    <button class="mini" id="btn-all">すべて選ぶ</button>
+    <button class="mini" id="btn-none">すべて外す</button>
+    <button class="mini" id="btn-purge">選んでいない写真を捨てる</button>
+    <button class="mini" id="btn-byname">ファイル名順に並べ直す</button>
+  </div>
   <div id="list" class="list"></div>
 </section>
 
 <section>
-  <h2>5. 出力</h2>
-  <button id="btn-build" disabled>Excelをダウンロード</button>
-  <span id="count" class="count"></span>
+  <h2>7. 出力</h2>
+  <label class="inline">1ページの枚数
+    <select id="f-perpage">
+      <option value="6">6枚（2列×3段・標準）</option>
+      <option value="4">4枚（2列×2段・大きめ）</option>
+      <option value="3">3枚（1列×3段・公共工事の標準）</option>
+      <option value="2">2枚（横並び・前後の対比向き）</option>
+      <option value="1">1枚（1ページ1枚）</option>
+    </select>
+  </label>
+  <p>
+    <button id="btn-build" disabled>Excelをダウンロード</button>
+    <span id="count" class="count"></span>
+  </p>
   <p id="build-status" class="status"></p>
 </section>
 
@@ -66,6 +93,7 @@
 <script src="vendor/exceljs.min.js"></script>
 <script src="vendor/heic2any.min.js"></script>
 <script src="js/config.js"></script>
+<script src="js/templates.js"></script>
 <script src="js/daicho.js"></script>
 <script src="js/photos.js"></script>
 <script src="js/ai.js"></script>
