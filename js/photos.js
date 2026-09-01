@@ -18,6 +18,16 @@
     return /\.(heic|heif)$/.test(n) || file.type === 'image/heic' || file.type === 'image/heif';
   }
 
+  /** ファイル名から「作業前／作業後」を推定する。分からなければ ''。
+   *  temma の実ファイルが `01_作業前.jpg` `07_作業後.jpg` の形なので、まずこれを拾う。
+   *  ⚠️ 推定であって確定ではない。画面でいつでも変えられる状態を壊さないこと。 */
+  function guessPhase(name) {
+    var n = String(name || '');
+    if (/(作業前|施工前|着手前|before|BEFORE|Before)/.test(n)) return '前';
+    if (/(作業後|施工後|完了|完成|after|AFTER|After)/.test(n)) return '後';
+    return '';
+  }
+
   function loadBitmap(blob) {
     return new Promise(function (res, rej) {
       var url = URL.createObjectURL(blob);
@@ -63,7 +73,8 @@
           name: f.name,
           prevDataUrl: prev.dataUrl, prevW: prev.w, prevH: prev.h,
           embedDataUrl: emb.dataUrl, embedW: emb.w, embedH: emb.h,
-          use: false, notes: ['', '', '']
+          use: false, notes: ['', '', ''],
+          phase: guessPhase(f.name)
         });
       }).catch(function (e) {
         console.warn('読み込めなかった:', f.name, e);
@@ -126,5 +137,8 @@
     }, Promise.resolve([]));
   }
 
-  APP.photos = { ingest: ingest, contactSheets: contactSheets, PREVIEW_MAX: PREVIEW_MAX, EMBED_MAX: EMBED_MAX };
+  APP.photos = {
+    ingest: ingest, contactSheets: contactSheets, guessPhase: guessPhase,
+    PREVIEW_MAX: PREVIEW_MAX, EMBED_MAX: EMBED_MAX
+  };
 })(typeof self !== 'undefined' ? self : this);

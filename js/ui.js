@@ -78,6 +78,7 @@
     });
 
     if (t.perPage) $('f-perpage').value = String(t.perPage);
+    $('btn-pair').hidden = !t.pair;
     state.manual = {};
     renderChecklist();
     render();
@@ -182,6 +183,19 @@
       cb.type = 'checkbox'; cb.checked = p.use;
       cb.onchange = function () { p.use = cb.checked; render(); renderChecklist(); };
 
+      // 前後対比のテンプレートでは、1枚ずつ「前／後」を切り替えられるようにする
+      var ph = null;
+      if (state.tpl && state.tpl.pair) {
+        ph = document.createElement('button');
+        ph.className = 'phase p' + (p.phase === '前' ? 'b' : p.phase === '後' ? 'a' : 'n');
+        ph.textContent = p.phase || '—';
+        ph.title = 'クリックで 前 → 後 → 未設定';
+        ph.onclick = function () {
+          p.phase = p.phase === '前' ? '後' : p.phase === '後' ? '' : '前';
+          render();
+        };
+      }
+
       var im = document.createElement('img');
       im.src = p.prevDataUrl; im.alt = p.name;
       im.title = 'クリックで拡大';
@@ -230,8 +244,9 @@
       dn.onclick = function () { swap(i, i + 1); };
       mv.appendChild(up); mv.appendChild(dn);
 
-      row.appendChild(grip); row.appendChild(cb); row.appendChild(im);
-      row.appendChild(meta); row.appendChild(mv);
+      row.appendChild(grip); row.appendChild(cb);
+      if (ph) row.appendChild(ph);
+      row.appendChild(im); row.appendChild(meta); row.appendChild(mv);
       list.appendChild(row);
     });
 
@@ -260,6 +275,29 @@
   function swap(a, b) {
     if (b < 0 || b >= state.photos.length) return;
     var t = state.photos[a]; state.photos[a] = state.photos[b]; state.photos[b] = t;
+    render();
+  }
+
+  /* ---------- 前後対比：前・後・前・後… の順に並べ替える ----------
+   * 2列のレイアウトでは、この順に並べると「左が前・右が後」で横に揃う。
+   * 自治体の除草業務仕様書が「同一箇所で施工前・施工後を対比させて添付」を求めるのに対応する。
+   * ⚠️ 組にできなかったものは捨てずに末尾へ回す。数が合わないことを画面で伝える。 */
+  function pairUp() {
+    var before = [], after = [], other = [];
+    state.photos.forEach(function (p) {
+      if (p.phase === '前') before.push(p);
+      else if (p.phase === '後') after.push(p);
+      else other.push(p);
+    });
+    var out = [], n = Math.min(before.length, after.length);
+    for (var i = 0; i < n; i++) { out.push(before[i], after[i]); }
+    var leftover = before.slice(n).concat(after.slice(n));
+    state.photos = out.concat(leftover, other);
+
+    var msg = n + ' 組を「前→後」の順に並べました。';
+    if (leftover.length) msg += ' 相手がいない写真が ' + leftover.length + ' 枚あります（末尾に置きました）。';
+    if (other.length) msg += ' 前後の指定がない写真が ' + other.length + ' 枚あります。';
+    say('ingest-status', msg, leftover.length > 0);
     render();
   }
 
@@ -421,6 +459,7 @@
         state.photos.sort(function (a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; });
         render();
       });
+      $('btn-pair').addEventListener('click', pairUp);
 
       // ページのどこに落としても追加できるようにする（見た目のハイライトは投入口だけ）
       var dz = $('dropzone');
